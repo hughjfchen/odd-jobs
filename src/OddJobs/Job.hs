@@ -387,8 +387,11 @@ runJob jid = do
       (flip catches) [Handler $ timeoutHandler job startTime, Handler $ exceptionHandler job startTime] $ do
         runJobWithTimeout lockTimeout job
         endTime <- liftIO getCurrentTime
-        deleteJob jid
-        let newJob = job{jobStatus=Success, jobLockedBy=Nothing, jobLockedAt=Nothing}
+        -- deleteJob jid
+        -- let newJob = job{jobStatus=Success, jobLockedBy=Nothing, jobLockedAt=Nothing}
+        -- I want to keep the `success` job into the table.
+        -- I need it for further processing.
+        newJob <- saveJob job{jobStatus=Success, jobLockedBy=Nothing, jobLockedAt=Nothing}
         log LevelInfo $ LogJobSuccess newJob (diffUTCTime endTime startTime)
         onJobSuccess newJob
         pure ()
