@@ -282,7 +282,7 @@ findJobByIdIO conn tname jid = PGS.query conn findJobByIdQuery (tname, jid) >>= 
 
 
 saveJobQuery :: PGS.Query
-saveJobQuery = "UPDATE ? set updated_at = ?, run_at = ?, status = ?, payload = ?, last_error = ?, attempts = ?, locked_at = ?, locked_by = ? WHERE id = ? RETURNING " <> concatJobDbColumns
+saveJobQuery = "UPDATE ? set updated_at=now(), run_at = ?, status = ?, payload = ?, last_error = ?, attempts = ?, locked_at = ?, locked_by = ? WHERE id = ? RETURNING " <> concatJobDbColumns
 
 deleteJobQuery :: PGS.Query
 deleteJobQuery = "DELETE FROM ? WHERE id = ?"
@@ -391,7 +391,7 @@ runJob jid = do
         -- let newJob = job{jobStatus=Success, jobLockedBy=Nothing, jobLockedAt=Nothing}
         -- I want to keep the `success` job into the table.
         -- I need it for further processing.
-        newJob <- saveJob job{jobUpdatedAt=endTime, jobStatus=Success, jobLockedBy=Nothing, jobLockedAt=Nothing}
+        newJob <- saveJob job{jobStatus=Success, jobLockedBy=Nothing, jobLockedAt=Nothing}
         log LevelInfo $ LogJobSuccess newJob (diffUTCTime endTime startTime)
         onJobSuccess newJob
         pure ()
