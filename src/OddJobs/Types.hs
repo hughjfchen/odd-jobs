@@ -317,13 +317,10 @@ data Config = Config
   -- of deployment).
   -- , cfgPidFile :: Maybe FilePath
 
-  -- | A "structured logging" function that __you__ need to provide. The
+  -- | A "structured logging" function that you need to provide. The
   -- @odd-jobs@ library does NOT use the standard logging interface provided by
   -- 'monad-logger' on purpose. Also look at 'cfgJobType' and 'defaultLogStr'
   --
-  -- __Note:__ Please take a look at the section on [structured
-  -- logging](https://www.haskelltutorials.com/odd-jobs/guide.html#structured-logging)
-  -- to find out how to use this to log in JSON.
   , cfgLogger :: LogLevel -> LogEvent -> IO ()
 
   -- | How to extract the "job type" from a 'Job'. If you are overriding this,
