@@ -282,10 +282,32 @@ findJobByIdIO conn tname jid = PGS.query conn findJobByIdQuery (tname, jid) >>= 
 
 
 saveJobQuery :: PGS.Query
-saveJobQuery = "UPDATE ? set updated_at=now(), run_at = ?, status = ?, payload = ?, last_error = ?, attempts = ?, locked_at = ?, locked_by = ? WHERE id = ? RETURNING " <> concatJobDbColumns
+saveJobQuery = "UPDATE ? set run_at = ?, status = ?, payload = ?, last_error = ?, attempts = ?, locked_at = ?, locked_by = ? WHERE id = ? RETURNING " <> concatJobDbColumns
 
 deleteJobQuery :: PGS.Query
 deleteJobQuery = "DELETE FROM ? WHERE id = ?"
+
+finishJobQuery :: PGS.Query
+finishJobQuery = "UPDATE ? set updated_at=now(), status = ?, locked_at = ?, locked_by = ? WHERE id = ? RETURNING " <> concatJobDbColumns
+
+finishJob :: (HasJobRunner m) => Job -> m Job
+finishJob j = do
+  tname <- getTableName
+  withDbConnection $ \conn -> liftIO $ finishJobIO conn tname j
+
+finishJobIO :: Connection -> TableName -> Job -> IO Job
+finishJobIO conn tname Job{jobRunAt, jobStatus, jobPayload, jobLastError, jobAttempts, jobLockedBy, jobLockedAt, jobId} = do
+  rs <- PGS.query conn finishJobQuery
+        ( tname
+        , jobStatus
+        , jobLockedAt
+        , jobLockedBy
+        , jobId
+        )
+  case rs of
+    [] -> Prelude.error $ "Could not find job while updating it id=" <> (show jobId)
+    [j] -> pure j
+    js -> Prelude.error $ "Not expecting multiple rows to ber returned when updating job id=" <> (show jobId)
 
 saveJob :: (HasJobRunner m) => Job -> m Job
 saveJob j = do
@@ -391,7 +413,7 @@ runJob jid = do
         -- let newJob = job{jobStatus=Success, jobLockedBy=Nothing, jobLockedAt=Nothing}
         -- I want to keep the `success` job into the table.
         -- I need it for further processing.
-        newJob <- saveJob job{jobStatus=Success, jobLockedBy=Nothing, jobLockedAt=Nothing}
+        newJob <- finishJob job{jobStatus=Success, jobLockedBy=Nothing, jobLockedAt=Nothing}
         log LevelInfo $ LogJobSuccess newJob (diffUTCTime endTime startTime)
         onJobSuccess newJob
         pure ()
