@@ -11,7 +11,7 @@ import OddJobs.Types (UIConfig(..))
 import OddJobs.Job(LogLevel(..), LogEvent(..))
 -- import System.Daemonize (DaemonOptions(..), daemonize)
 import qualified System.Posix.Daemon as Daemon
-import System.FilePath (FilePath)
+import System.FilePath (FilePath, replaceFileName)
 import System.Posix.Process (getProcessID)
 import qualified System.Directory as Dir
 import qualified System.Exit as Exit
@@ -121,7 +121,7 @@ defaultStartCommand CommonStartArgs{..} mUIArgs cliType = do
     False ->
       coreStartupFn
     True -> do
-      Daemon.runDetached (Just startPidFile) (Daemon.ToFile "/tmp/oddjobs.out") coreStartupFn
+      Daemon.runDetached (Just startPidFile) (Daemon.ToFile $ replaceFileName startPidFile "oddjobs.out") coreStartupFn
   where
     uiArgs = fromJustNote "Please specify Web UI Startup Args" $ traceShowId mUIArgs
     coreStartupFn =
